@@ -16,105 +16,68 @@ Licensed under the MIT license http://www.opensource.org/licenses/mit-license.ph
 __author__ = "Adam Newman"
 
 #Normally use relative import. In test mode use local import.
-try:
-    from . import aes_tables
-except ValueError:
-    import aes_tables
-
+try:from .aes_tables import sbox,i_sbox,galI,galNI
+except ValueError:from aes_tables import sbox,i_sbox,galI,galNI
+def _mix_columns(state, gal):
+    #Perform mix_column for each column in the state
+    g0,g1,g2,g3=gal
+    for i,i1,i2,i3,i4 in (0,1,2,3,4),(4,5,6,7,8),(8,9,10,11,12),(12,13,14,15,16):
+        c0,c1,c2,c3=state[i:i4]
+        state[i]=g0[c0]^g1[c1]^g2[c2]^g3[c3]
+        state[i1]=g3[c0]^g0[c1]^g1[c2]^g2[c3]
+        state[i2]=g2[c0]^g3[c1]^g0[c2]^g1[c3]
+        state[i3]=g1[c0]^g2[c1]^g3[c2]^g0[c3]
+def _sub_bytes(state):
+    #Run state through sbox
+    for i in 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15:state[i]=sbox[state[i]]
+def _i_sub_bytes(state):
+    #Run state through inverted sbox
+    for i in 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15:state[i]=i_sbox[state[i]]
+def _shift_rows(state):
+    #Extract rows as every 4th item starting at [1..3]
+    #Replace row with shift_row operation
+    for i,i5 in (1,5),(2,10),(3,15):state[i::4]=state[i5::4]+state[i:i5:4]
+def _i_shift_rows(state):
+    #Extract rows as every 4th item starting at [1..3]
+    #Replace row with inverse shift_row operation
+    for i,i3 in (1,13),(2,10),(3,7):state[i::4]=state[i3::4]+state[i:i3:4]
+def _add_round_key(state,round):
+    #XOR the state with the current round key
+    for i in 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15:state[i]^=round[i]
 class AESCipher:
     """Perform single block AES cipher/decipher"""
-
     def __init__ (self, expanded_key):
         #Store epanded key
         self._expanded_key = expanded_key
-
         #Number of rounds determined by expanded key length
-        self._Nr = (len(expanded_key)>>4) - 1
-
-    def _sub_bytes (self, state):
-        #Run state through sbox
-        for i,s in enumerate(state):state[i]=aes_tables.sbox[s]
-
-    def _i_sub_bytes (self, state):
-        #Run state through inverted sbox
-        for i,s in enumerate(state):state[i]=aes_tables.i_sbox[s]
-
-    def _shift_row (self, row, shift):
-        #Circular shift row left by shift amount
-        row+=row[:shift]
-        del row[:shift]
-        return row
-
-    def _i_shift_row (self, row, shift):
-        #Circular shift row left by shift amount
-        row+=row[:shift]
-        del row[:4+shift]
-        return row
-
-    def _shift_rows (self, state):
-        #Extract rows as every 4th item starting at [1..3]
-        #Replace row with shift_row operation
-        for i in 1,2,3:
-            state[i::4] = self._shift_row(state[i::4],i)
-
-    def _i_shift_rows (self, state):
-        #Extract rows as every 4th item starting at [1..3]
-        #Replace row with inverse shift_row operation
-        for i in 1,2,3:
-            state[i::4] = self._i_shift_row(state[i::4],-i)
-
-    def _mix_column (self, column, inverse):
-        #Use galois lookup tables instead of performing complicated operations
-        #If inverse, use matrix with inverse values
-        g0,g1,g2,g3=aes_tables.galI if inverse else aes_tables.galNI
-        c0,c1,c2,c3=column
-        return (
-            g0[c0]^g1[c1]^g2[c2]^g3[c3],
-            g3[c0]^g0[c1]^g1[c2]^g2[c3],
-            g2[c0]^g3[c1]^g0[c2]^g1[c3],
-            g1[c0]^g2[c1]^g3[c2]^g0[c3])
-
-    def _mix_columns (self, state, inverse):
-        #Perform mix_column for each column in the state
-        for i,j in (0,4),(4,8),(8,12),(12,16):
-            state[i:j] = self._mix_column(state[i:j], inverse)
-
-    def _add_round_key (self, state, round):
-        #XOR the state with the current round key
-        for k,(i,j) in enumerate(zip(state, self._expanded_key[round*16:(round+1)*16])):state[k]=i^j
-
+        self._Nr = len(expanded_key)-16
     def cipher_block (self, state):
         """Perform AES block cipher on input"""
         state=state+[0]*(16-len(state))#Fails test if it changes the input with +=
-
-        self._add_round_key(state, 0)
-
-        for i in range(1, self._Nr):
-            self._sub_bytes(state)
-            self._shift_rows(state)
-            self._mix_columns(state, False)
-            self._add_round_key(state, i)
-
-        self._sub_bytes(state)
-        self._shift_rows(state)
-        self._add_round_key(state, self._Nr)
+        sek=self._expanded_key
+        _add_round_key(state,sek[:16])
+        for i in range(16,self._Nr,16):
+            _sub_bytes(state)
+            _shift_rows(state)
+            _mix_columns(state,galNI)
+            _add_round_key(state,sek[i:i+16])
+        _sub_bytes(state)
+        _shift_rows(state)
+        _add_round_key(state,sek[self._Nr:])
         return state
-
     def decipher_block (self, state):
         """Perform AES block decipher on input"""
         state=state+[0]*(16-len(state))
-
-        self._add_round_key(state, self._Nr)
-
-        for i in range(self._Nr - 1, 0, -1):
-            self._i_shift_rows(state)
-            self._i_sub_bytes(state)
-            self._add_round_key(state, i)
-            self._mix_columns(state, True)
-
-        self._i_shift_rows(state)
-        self._i_sub_bytes(state)
-        self._add_round_key(state, 0)
+        sek=self._expanded_key
+        _add_round_key(state,sek[self._Nr:])
+        for i in range(self._Nr-16,0,-16):
+            _i_shift_rows(state)
+            _i_sub_bytes(state)
+            _add_round_key(state,sek[i:i+16])
+            _mix_columns(state,galI)
+        _i_shift_rows(state)
+        _i_sub_bytes(state)
+        _add_round_key(state,sek[:16])
         return state
 
 import unittest
