@@ -20,8 +20,8 @@ try:from .aes_tables import sbox,i_sbox,galI,galNI
 except ValueError:from aes_tables import sbox,i_sbox,galI,galNI
 #Perform mix_column for each column in the state
 exec("def _mix_columns(s,g):g0,g1,g2,g3=g;%s=s;return ["%",".join("s%x"%i for i in range(16))+",".join((
-"g0[s%x]^g1[s%x]^g2[s%x]^g3[s%x],g3[s%x]^g0[s%x]^g1[s%x]^g2[s%x],g2[s%x]^g3[s%x]^g0[s%x]^g1[s%x],g1[s%x]^g2[s%x]^g3[s%x]^g0[s%x]"%(i,i1,i2,i3,i,i1,i2,i3,i,i1,i2,i3,i,i1,i2,i3)
-for i,i1,i2,i3,i4 in ((0,1,2,3,4),(4,5,6,7,8),(8,9,10,11,12),(12,13,14,15,16))))+"]")
+"g0[s%x]^g1[s%x]^g2[s%x]^g3[s%x],g3[s%x]^g0[s%x]^g1[s%x]^g2[s%x],g2[s%x]^g3[s%x]^g0[s%x]^g1[s%x],g1[s%x]^g2[s%x]^g3[s%x]^g0[s%x]"%(i*4)
+for i in ((0,1,2,3),(4,5,6,7),(8,9,10,11),(12,13,14,15))))+"]")
 #Run state through sbox
 exec("def _sub_bytes(s):%s=s;"%",".join("s%x"%i for i in range(16))+";".join("s[%d]=sbox[s%x]"%(i,i) for i in range(16)))
 #Run state through inverted sbox
