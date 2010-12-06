@@ -19,30 +19,18 @@ __author__ = "Adam Newman"
 try:from .aes_tables import sbox,i_sbox,galI,galNI
 except ValueError:from aes_tables import sbox,i_sbox,galI,galNI
 #Perform mix_column for each column in the state
-exec("def _mix_columns(s,g):g0,g1,g2,g3=g;%s=s;return ["%",".join("s%x"%i for i in range(16))+",".join((
+exec("def _mix_columns(s,g):g0,g1,g2,g3=g;%s=s;return "%",".join("s%x"%i for i in range(16))+",".join((
 "g0[s%x]^g1[s%x]^g2[s%x]^g3[s%x],g3[s%x]^g0[s%x]^g1[s%x]^g2[s%x],g2[s%x]^g3[s%x]^g0[s%x]^g1[s%x],g1[s%x]^g2[s%x]^g3[s%x]^g0[s%x]"%(i*4)
-for i in ((0,1,2,3),(4,5,6,7),(8,9,10,11),(12,13,14,15))))+"]")
+for i in ((0,1,2,3),(4,5,6,7),(8,9,10,11),(12,13,14,15)))))
 #Run state through sbox
-exec("def _sub_bytes(s):%s=s;"%",".join("s%x"%i for i in range(16))+";".join("s[%d]=sbox[s%x]"%(i,i) for i in range(16)))
+exec("def _sub_bytes(s):return %s"%",".join("sbox[s[%d]]"%i for i in range(16)))
 #Run state through inverted sbox
-exec("def _i_sub_bytes(s):%s=s;"%",".join("s%x"%i for i in range(16))+";".join("s[%d]=i_sbox[s%x]"%(i,i) for i in range(16)))
+exec("def _i_sub_bytes(s):return %s"%",".join("i_sbox[s[%d]]"%i for i in range(16)))
 #XOR the state with the current round key
-exec("def _add_round_key(s,r):"+";".join("s[%d]^=r[%d]"%(i,i) for i in range(16)))
-def _shift_rows(state):
-    #Extract rows as every 4th item starting at [1..3]
-    #Replace row with shift_row operation
-    state[1::4]=state[5::4]+state[1:5:4]
-    state[2::4]=state[10::4]+state[2:10:4]
-    state[3::4]=state[15:]+state[3:15:4]
-def _i_shift_rows(state):
-    #Extract rows as every 4th item starting at [1..3]
-    #Replace row with inverse shift_row operation
-    state[1::4]=state[13::4]+state[1:13:4]
-    state[2::4]=state[10::4]+state[2:10:4]
-    state[3::4]=state[7::4]+state[3:7:4]
-#def _add_round_key(state,round):
-    #XOR the state with the current round key
-    #for i in 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15:state[i]^=round[i]
+exec("def _add_round_key(s,r):return %s"%",".join("s[%d]^r[%d]"%(i,i) for i in range(16)))
+#Shift column wise
+def _shift_rows(s):s0,s1,s2,s3,s4,s5,s6,s7,s8,s9,sa,sb,sc,sd,se,sf=s;return[s0,s5,sa,sf,s4,s9,se,s3,s8,sd,s2,s7,sc,s1,s6,sb]
+def _i_shift_rows(s):s0,s1,s2,s3,s4,s5,s6,s7,s8,s9,sa,sb,sc,sd,se,sf=s;return[s0,sd,sa,s7,s4,s1,se,sb,s8,s5,s2,sf,sc,s9,s6,s3]
 class AESCipher:
     """Perform single block AES cipher/decipher"""
     def __init__ (self, expanded_key):
@@ -52,32 +40,16 @@ class AESCipher:
         self._Nr = len(expanded_key)-16
     def cipher_block (self, state):
         """Perform AES block cipher on input"""
-        state=state+[0]*(16-len(state))#Fails test if it changes the input with +=
         sek=self._expanded_key
-        _add_round_key(state,sek[:16])
-        for i in range(16,self._Nr,16):
-            _sub_bytes(state)
-            _shift_rows(state)
-            state=_mix_columns(state,galNI)
-            _add_round_key(state,sek[i:i+16])
-        _sub_bytes(state)
-        _shift_rows(state)
-        _add_round_key(state,sek[self._Nr:])
-        return state
+        state=_add_round_key(state+[0]*(16-len(state)),sek[:16])
+        for i in range(16,self._Nr,16):state=_add_round_key(_mix_columns(_shift_rows(_sub_bytes(state)),galNI),sek[i:i+16])
+        return _add_round_key(_shift_rows(_sub_bytes(state)),sek[self._Nr:])
     def decipher_block (self, state):
         """Perform AES block decipher on input"""
-        state=state+[0]*(16-len(state))
         sek=self._expanded_key
-        _add_round_key(state,sek[self._Nr:])
-        for i in range(self._Nr-16,0,-16):
-            _i_shift_rows(state)
-            _i_sub_bytes(state)
-            _add_round_key(state,sek[i:i+16])
-            state=_mix_columns(state,galI)
-        _i_shift_rows(state)
-        _i_sub_bytes(state)
-        _add_round_key(state,sek[:16])
-        return state
+        state=_add_round_key(state+[0]*(16-len(state)),sek[self._Nr:])
+        for i in range(self._Nr-16,0,-16):state=_mix_columns(_add_round_key(_i_sub_bytes(_i_shift_rows(state)),sek[i:i+16]),galI)
+        return _add_round_key(_i_sub_bytes(_i_shift_rows(state)),sek[:16])
 
 import unittest
 class TestCipher(unittest.TestCase):
