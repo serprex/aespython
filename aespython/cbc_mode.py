@@ -19,17 +19,16 @@ class CBCMode:
         self._iv = [0] * block_size
 
     def set_iv(self, iv):
-        if (len(iv) == self._block_size):
+        if len(iv) == self._block_size:
             self._iv = iv
-   
+
     def encrypt_block(self, plaintext):
-        ciphertext = self._block_cipher.cipher_block([i ^ j for i,j in zip (plaintext, self._iv)])
-        self._iv = ciphertext
-        return ciphertext
-    
+        iv=self._iv=self._block_cipher.cipher_block([i ^ j for i,j in zip (plaintext, self._iv)])
+        return iv
+
     def decrypt_block(self, ciphertext):
-        result_decipher = self._block_cipher.decipher_block(ciphertext)
-        plaintext = [i ^ j for i,j in zip (self._iv, result_decipher)]
+        plaintext = self._block_cipher.decipher_block(ciphertext)
+        for i,v in enumerate(self._iv):plaintext[i]^=v
         self._iv = ciphertext
         return plaintext
 
@@ -40,27 +39,27 @@ class TestEncryptionMode(unittest.TestCase):
         import key_expander
         import aes_cipher
         import test_keys
-        
+
         test_data = test_keys.TestKeys()
-        
+
         test_expander = key_expander.KeyExpander(256)
         test_expanded_key = test_expander.expand(test_data.test_mode_key)
-        
+
         test_cipher = aes_cipher.AESCipher(test_expanded_key)
-        
+
         test_cbc = CBCMode(test_cipher, 16)
-        
-        test_cbc.set_iv(test_data.test_mode_iv)    
+
+        test_cbc.set_iv(test_data.test_mode_iv)
         for k in range(4):
             self.assertEquals(len([i for i, j in zip(test_data.test_cbc_ciphertext[k],test_cbc.encrypt_block(test_data.test_mode_plaintext[k])) if i == j]),
                 16,
-                msg='CBC encrypt test block' + str(k))
-        
+                msg='CBC encrypt test block %d'%k)
+
         test_cbc.set_iv(test_data.test_mode_iv)
         for k in range(4):
             self.assertEquals(len([i for i, j in zip(test_data.test_mode_plaintext[k],test_cbc.decrypt_block(test_data.test_cbc_ciphertext[k])) if i == j]),
                 16,
-                msg='CBC decrypt test block' + str(k))
+                msg='CBC decrypt test block %d'%k)
 
 if __name__ == "__main__":
     unittest.main()

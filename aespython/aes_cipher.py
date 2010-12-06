@@ -18,32 +18,31 @@ __author__ = "Adam Newman"
 #Normally use relative import. In test mode use local import.
 try:from .aes_tables import sbox,i_sbox,galI,galNI
 except ValueError:from aes_tables import sbox,i_sbox,galI,galNI
-def _mix_columns(state, gal):
-    #Perform mix_column for each column in the state
-    g0,g1,g2,g3=gal
-    for i,i1,i2,i3,i4 in (0,1,2,3,4),(4,5,6,7,8),(8,9,10,11,12),(12,13,14,15,16):
-        c0,c1,c2,c3=state[i:i4]
-        state[i]=g0[c0]^g1[c1]^g2[c2]^g3[c3]
-        state[i1]=g3[c0]^g0[c1]^g1[c2]^g2[c3]
-        state[i2]=g2[c0]^g3[c1]^g0[c2]^g1[c3]
-        state[i3]=g1[c0]^g2[c1]^g3[c2]^g0[c3]
-def _sub_bytes(state):
-    #Run state through sbox
-    for i in 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15:state[i]=sbox[state[i]]
-def _i_sub_bytes(state):
-    #Run state through inverted sbox
-    for i in 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15:state[i]=i_sbox[state[i]]
+#Perform mix_column for each column in the state
+exec("def _mix_columns(s,g):g0,g1,g2,g3=g;%s=s;return ["%",".join("s%x"%i for i in range(16))+",".join((
+"g0[s%x]^g1[s%x]^g2[s%x]^g3[s%x],g3[s%x]^g0[s%x]^g1[s%x]^g2[s%x],g2[s%x]^g3[s%x]^g0[s%x]^g1[s%x],g1[s%x]^g2[s%x]^g3[s%x]^g0[s%x]"%(i,i1,i2,i3,i,i1,i2,i3,i,i1,i2,i3,i,i1,i2,i3)
+for i,i1,i2,i3,i4 in ((0,1,2,3,4),(4,5,6,7,8),(8,9,10,11,12),(12,13,14,15,16))))+"]")
+#Run state through sbox
+exec("def _sub_bytes(s):%s=s;"%",".join("s%x"%i for i in range(16))+";".join("s[%d]=sbox[s%x]"%(i,i) for i in range(16)))
+#Run state through inverted sbox
+exec("def _i_sub_bytes(s):%s=s;"%",".join("s%x"%i for i in range(16))+";".join("s[%d]=i_sbox[s%x]"%(i,i) for i in range(16)))
+#XOR the state with the current round key
+exec("def _add_round_key(s,r):"+";".join("s[%d]^=r[%d]"%(i,i) for i in range(16)))
 def _shift_rows(state):
     #Extract rows as every 4th item starting at [1..3]
     #Replace row with shift_row operation
-    for i,i5 in (1,5),(2,10),(3,15):state[i::4]=state[i5::4]+state[i:i5:4]
+    state[1::4]=state[5::4]+state[1:5:4]
+    state[2::4]=state[10::4]+state[2:10:4]
+    state[3::4]=state[15:]+state[3:15:4]
 def _i_shift_rows(state):
     #Extract rows as every 4th item starting at [1..3]
     #Replace row with inverse shift_row operation
-    for i,i3 in (1,13),(2,10),(3,7):state[i::4]=state[i3::4]+state[i:i3:4]
-def _add_round_key(state,round):
+    state[1::4]=state[13::4]+state[1:13:4]
+    state[2::4]=state[10::4]+state[2:10:4]
+    state[3::4]=state[7::4]+state[3:7:4]
+#def _add_round_key(state,round):
     #XOR the state with the current round key
-    for i in 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15:state[i]^=round[i]
+    #for i in 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15:state[i]^=round[i]
 class AESCipher:
     """Perform single block AES cipher/decipher"""
     def __init__ (self, expanded_key):
@@ -59,7 +58,7 @@ class AESCipher:
         for i in range(16,self._Nr,16):
             _sub_bytes(state)
             _shift_rows(state)
-            _mix_columns(state,galNI)
+            state=_mix_columns(state,galNI)
             _add_round_key(state,sek[i:i+16])
         _sub_bytes(state)
         _shift_rows(state)
@@ -74,7 +73,7 @@ class AESCipher:
             _i_shift_rows(state)
             _i_sub_bytes(state)
             _add_round_key(state,sek[i:i+16])
-            _mix_columns(state,galI)
+            state=_mix_columns(state,galI)
         _i_shift_rows(state)
         _i_sub_bytes(state)
         _add_round_key(state,sek[:16])

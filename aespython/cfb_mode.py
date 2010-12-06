@@ -16,23 +16,21 @@ class CFBMode:
     def __init__(self, block_cipher, block_size):
         self._block_cipher = block_cipher
         self._block_size = block_size
-        self._iv = [0] * block_size        
-    
+        self._iv = [0] * block_size
+
     def set_iv(self, iv):
-        if (len(iv) == self._block_size):
+        if len(iv) == self._block_size:
             self._iv = iv
-    
+
     def encrypt_block(self, plaintext):
         cipher_iv = self._block_cipher.cipher_block(self._iv)
-        ciphertext = [i ^ j for i,j in zip (plaintext, cipher_iv)]
-        self._iv = ciphertext
-        return ciphertext
-    
+        iv = self._iv = [i ^ j for i,j in zip (plaintext, cipher_iv)]
+        return iv
+
     def decrypt_block(self, ciphertext):
         cipher_iv = self._block_cipher.cipher_block(self._iv)
-        plaintext = [i ^ j for i,j in zip (cipher_iv, ciphertext)]
         self._iv = ciphertext
-        return plaintext
+        return [i ^ j for i,j in zip (cipher_iv, ciphertext)]
 
 import unittest
 class TestEncryptionMode(unittest.TestCase):
@@ -41,22 +39,22 @@ class TestEncryptionMode(unittest.TestCase):
         import key_expander
         import aes_cipher
         import test_keys
-        
+
         test_data = test_keys.TestKeys()
-        
+
         test_expander = key_expander.KeyExpander(256)
         test_expanded_key = test_expander.expand(test_data.test_mode_key)
-        
+
         test_cipher = aes_cipher.AESCipher(test_expanded_key)
-        
+
         test_cfb = CFBMode(test_cipher, 16)
-        
-        test_cfb.set_iv(test_data.test_mode_iv)    
+
+        test_cfb.set_iv(test_data.test_mode_iv)
         for k in range(4):
             self.assertEquals(len([i for i, j in zip(test_data.test_cfb_ciphertext[k],test_cfb.encrypt_block(test_data.test_mode_plaintext[k])) if i == j]),
                 16,
                 msg='CFB encrypt test block' + str(k))
-        
+
         test_cfb.set_iv(test_data.test_mode_iv)
         for k in range(4):
             self.assertEquals(len([i for i, j in zip(test_data.test_mode_plaintext[k],test_cfb.decrypt_block(test_data.test_cfb_ciphertext[k])) if i == j]),
