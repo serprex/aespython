@@ -18,38 +18,35 @@ __author__ = "Adam Newman"
 #Normally use relative import. In test mode use local import.
 try:from .aes_tables import sbox,i_sbox,galI,galNI
 except ValueError:from aes_tables import sbox,i_sbox,galI,galNI
-#Perform mix_column for each column in the state
-exec("def _mix_columns(s,g):g0,g1,g2,g3=g;%s=s;return "%",".join("s%x"%i for i in range(16))+",".join((
-"g0[s%x]^g1[s%x]^g2[s%x]^g3[s%x],g3[s%x]^g0[s%x]^g1[s%x]^g2[s%x],g2[s%x]^g3[s%x]^g0[s%x]^g1[s%x],g1[s%x]^g2[s%x]^g3[s%x]^g0[s%x]"%(i*4)
-for i in ((0,1,2,3),(4,5,6,7),(8,9,10,11),(12,13,14,15)))))
-#Run state through sbox
-exec("def _sub_bytes(s):return %s"%",".join("sbox[s[%d]]"%i for i in range(16)))
-#Run state through inverted sbox
-exec("def _i_sub_bytes(s):return %s"%",".join("i_sbox[s[%d]]"%i for i in range(16)))
-#XOR the state with the current round key
-exec("def _add_round_key(s,r):return %s"%",".join("s[%d]^r[%d]"%(i,i) for i in range(16)))
-#Shift column wise
-def _shift_rows(s):s0,s1,s2,s3,s4,s5,s6,s7,s8,s9,sa,sb,sc,sd,se,sf=s;return[s0,s5,sa,sf,s4,s9,se,s3,s8,sd,s2,s7,sc,s1,s6,sb]
-def _i_shift_rows(s):s0,s1,s2,s3,s4,s5,s6,s7,s8,s9,sa,sb,sc,sd,se,sf=s;return[s0,sd,sa,s7,s4,s1,se,sb,s8,s5,s2,sf,sc,s9,s6,s3]
+ups="(s0,s1,s2,s3,s4,s5,s6,s7,s8,s9,sa,sb,sc,sd,se,sf)"
+upr=ups.replace("s","r")
+mix="(%s)"%",".join(("g0[s%x]^g1[s%x]^g2[s%x]^g3[s%x]^r%x,g3[s%x]^g0[s%x]^g1[s%x]^g2[s%x]^r%x,g2[s%x]^g3[s%x]^g0[s%x]^g1[s%x]^r%x,g1[s%x]^g2[s%x]^g3[s%x]^g0[s%x]^r%x"%(i0,i1,i2,i3,i0,i0,i1,i2,i3,i1,i0,i1,i2,i3,i2,i0,i1,i2,i3,i3) for (i0,i1,i2,i3) in ((0,1,2,3),(4,5,6,7),(8,9,10,11),(12,13,14,15))))
+imix="(%s)"%",".join(("g0[s%x]^g1[s%x]^g2[s%x]^g3[s%x],g3[s%x]^g0[s%x]^g1[s%x]^g2[s%x],g2[s%x]^g3[s%x]^g0[s%x]^g1[s%x],g1[s%x]^g2[s%x]^g3[s%x]^g0[s%x]"%(i*4) for i in ((0,1,2,3),(4,5,6,7),(8,9,10,11),(12,13,14,15))))
+csl="s0 s5 sa sf s4 s9 se s3 s8 sd s2 s7 sc s1 s6 sb".split()
+csr="s0 sd sa s7 s4 s1 se sb s8 s5 s2 sf sc s9 s6 s3".split()
+box=",".join("sbox[%s]"%i for i in csl)
+ibox=",".join("i_sbox[%s]^%s"%i for i in zip(csr,upr[1:-1].split(",")))
+xor=",".join("sbox[%s]^r%x"%i for i in zip(csl,range(16)))
+ixor=",".join("i_sbox[%s]^r%x"%i for i in zip(csr,range(16)))
+xori=";".join("s%x^=r%x"%(i,i) for i in range(16))
+ciph="""def decipher_block(f,s):
+    sek=f._expanded_key
+    g0,g1,g2,g3=galNI
+    %(ups)=s+[0]*(16-len(s))
+    %(upr)=k0
+    %(xori)
+    for i in range(!16):
+        %(upr)=sek[i:i+16]
+        %(ups)=%(box)
+        %(ups)=%(mix)
+    %(upr)=k2
+    return %(xor)""".replace("%(ups)",ups).replace("%(xori)",xori).replace("%(upr)",upr)
 class AESCipher:
-    """Perform single block AES cipher/decipher"""
-    def __init__ (self, expanded_key):
-        #Store epanded key
+    def __init__(self, expanded_key):
         self._expanded_key = expanded_key
-        #Number of rounds determined by expanded key length
         self._Nr = len(expanded_key)-16
-    def cipher_block (self, state):
-        """Perform AES block cipher on input"""
-        sek=self._expanded_key
-        state=_add_round_key(state+[0]*(16-len(state)),sek[:16])
-        for i in range(16,self._Nr,16):state=_add_round_key(_mix_columns(_shift_rows(_sub_bytes(state)),galNI),sek[i:i+16])
-        return _add_round_key(_shift_rows(_sub_bytes(state)),sek[self._Nr:])
-    def decipher_block (self, state):
-        """Perform AES block decipher on input"""
-        sek=self._expanded_key
-        state=_add_round_key(state+[0]*(16-len(state)),sek[self._Nr:])
-        for i in range(self._Nr-16,0,-16):state=_mix_columns(_add_round_key(_i_sub_bytes(_i_shift_rows(state)),sek[i:i+16]),galI)
-        return _add_round_key(_i_sub_bytes(_i_shift_rows(state)),sek[:16])
+    exec(ciph.replace("dec","c").replace("k0","sek[:16]").replace("!","16,f._Nr,").replace("k2","sek[f._Nr:]").replace("%(xor)",xor).replace("%(box)",box).replace("%(mix)",mix))
+    exec(ciph.replace("NI","I").replace("k0","sek[f._Nr:]").replace("!","f._Nr-16,0,-").replace("k2","sek[:16]").replace("%(xor)",ixor).replace("%(box)",ibox).replace("%(mix)",imix))
 
 import unittest
 class TestCipher(unittest.TestCase):
@@ -66,13 +63,11 @@ class TestCipher(unittest.TestCase):
             test_cipher = AESCipher(test_expanded_key)
             test_result_ciphertext = test_cipher.cipher_block(test_data.test_block_plaintext)
             self.assertEquals(len([i for i, j in zip(test_result_ciphertext, test_data.test_block_ciphertext_validated[key_size]) if i == j]),
-                16,
-                msg='Test %d bit cipher'%key_size)
+                16,msg='Test %d bit cipher'%key_size)
 
             test_result_plaintext = test_cipher.decipher_block(test_data.test_block_ciphertext_validated[key_size])
             self.assertEquals(len([i for i, j in zip(test_result_plaintext, test_data.test_block_plaintext) if i == j]),
-                16,
-                msg='Test %d bit decipher'%key_size)
+                16,msg='Test %d bit decipher'%key_size)
 
 if __name__ == "__main__":
     unittest.main()
