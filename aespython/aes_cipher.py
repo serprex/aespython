@@ -20,12 +20,11 @@ try:from .aes_tables import sbox,i_sbox,galI,galNI
 except ValueError:from aes_tables import sbox,i_sbox,galI,galNI
 ups=",".join("s%x"%x for x in range(16))
 upr=ups.replace("s","r")
-mix=",".join(",".join(("g{0}[s%x]^g{1}[s%x]^g{2}[s%x]^g{3}[s%x]^r%x"%(i+(i[0]+(0,3,2,1)[j],))).format(j&3,j+1&3,j+2&3,j+3&3) for j in (0,3,2,1)) for i in ((0,1,2,3),(4,5,6,7),(8,9,10,11),(12,13,14,15))).replace("g2","").replace("g3","")
-for c in "^[",",[":
-	i=mix.find(c)
-	while i!=-1:
-		mix=mix[:i+1]+mix[i+2:i+4]+mix[i+5:]
-		i=mix.find(c,i)
+mix=",".join(",".join(("g{0}[s%x]^g{1}[s%x]^g{2}[s%x]^g{3}[s%x]^r%x"%(i+(i[0]+(0,3,2,1)[j],))).format(j&3,j+1&3,j+2&3,j+3&3) for j in (0,3,2,1)) for i in ((0,1,2,3),(4,5,6,7),(8,9,10,11),(12,13,14,15))).replace("g2","g").replace("g3","g")
+i=mix.find("g[")
+while i!=-1:
+	mix=mix[:i]+mix[i+2:i+4]+mix[i+5:]
+	i=mix.find("g[",i)
 imix=",".join(",".join(("g{0}[s%x]^g{1}[s%x]^g{2}[s%x]^g{3}[s%x]"%i).format(j&3,j+1&3,j+2&3,j+3&3) for j in (0,3,2,1)) for i in ((0,1,2,3),(4,5,6,7),(8,9,10,11),(12,13,14,15)))
 csl=["s%x"%(x*5&15) for x in range(16)]
 csr=["s%x"%(x*-3&15) for x in range(16)]
