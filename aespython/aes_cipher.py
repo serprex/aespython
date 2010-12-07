@@ -28,21 +28,21 @@ while i!=-1:
 imix=",".join(",".join(("g{0}[s%x]^g{1}[s%x]^g{2}[s%x]^g{3}[s%x]"%i).format(j&3,j+1&3,j+2&3,j+3&3) for j in (0,3,2,1)) for i in ((0,1,2,3),(4,5,6,7),(8,9,10,11),(12,13,14,15)))
 csl=["s%x"%(x*5&15) for x in range(16)]
 csr=["s%x"%(x*-3&15) for x in range(16)]
-box=",".join("sx[%s]"%i for i in csl)
-ibox=",".join("ix[%s]^r%x"%i for i in zip(csr,range(16)))
-xor=",".join("sx[%s]^r%x"%i for i in zip(csl,range(16)))
+box=",".join("s[%s]"%i for i in csl)
+ibox=",".join("s[%s]^r%x"%i for i in zip(csr,range(16)))
+xor=",".join("s[%s]^r%x"%i for i in zip(csl,range(16)))
 xori=";".join("s%x^=r%x"%(i,i) for i in range(16))
 ciph="""def decipher_block(f,s):
- sx=sbox;ix=i_sbox;g0,g1,g2,g3=galNI;sek=f._expanded_key;S=s+[0]*(16-len(s));R=sek[:16];XI
- for i in range(!16):R=sek[i:i+16];S=BX;S=MX
- R=sek[f._Nr:]
- return """.replace("S",ups).replace("XI",xori).replace("R",upr)
+ g0,g1,g2,g3=galNI;ek=f._expanded_key;S=s+[0]*(16-len(s));s=sbox;R=ek[:16];X
+ for f in range(!16):R=ek[f:f+16];S=B;S=M
+ R=ek[f+16:]
+ return """.replace("S",ups).replace("R",upr).replace("X",xori)
 class AESCipher:
     def __init__(self,expanded_key):
         self._expanded_key=expanded_key
         self._Nr=len(expanded_key)-16
-    exec(ciph.replace("dec","c").replace("!","16,f._Nr,").replace("BX",box).replace("MX",mix).replace("g2,g3","")+xor)
-    exec(ciph.replace("NI","I").replace(":16","f._Nr :").replace("f._Nr:",":16").replace("!","f._Nr-16,0,-").replace("BX",ibox).replace("MX",imix)+ibox)
+    exec(ciph.replace("g2,g3","").replace("dec","c").replace("!","16,f._Nr,").replace("B",box).replace("M",mix)+xor)
+    exec(ciph.replace("NI","I").replace(":16","f._Nr:").replace("f+16:",":16").replace("!","f._Nr-16,0,-").replace("sbox","i_sbox").replace("B",ibox).replace("M",imix)+ibox)
 import unittest
 class TestCipher(unittest.TestCase):
     def test_cipher(self):

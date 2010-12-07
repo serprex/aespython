@@ -82,12 +82,10 @@ class KeyExpander:
 
 import unittest
 class TestKeyExpander(unittest.TestCase):
-
     def test_keys(self):
         """Test All Key Expansions"""
         import test_keys
         test_data = test_keys.TestKeys()
-
         for key_size in 128, 192, 256:
             test_expander = KeyExpander(key_size)
             test_expanded_key = test_expander.expand(test_data.test_key[key_size])
@@ -97,6 +95,3 @@ class TestKeyExpander(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-
