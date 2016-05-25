@@ -27,7 +27,7 @@ class CBCMode:
         return iv
 
     def decrypt_block(self, ciphertext):
-        plaintext = self._block_cipher.decipher_block(ciphertext)
+        plaintext = list(self._block_cipher.decipher_block(ciphertext))
         for i,v in enumerate(self._iv):plaintext[i]^=v
         self._iv = ciphertext
         return plaintext
