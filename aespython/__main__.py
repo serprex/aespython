@@ -23,7 +23,7 @@ class TestKeyExpander(TestCase):
         for key_size in 128, 192, 256:
             test_expander = KeyExpander(key_size)
             test_expanded_key = test_expander.expand(test_data.test_key[key_size])
-            self.assertEqual (len([i for i, j in zip(test_expanded_key, test_data.test_expanded_key_validated[key_size]) if i == j]),
+            self.assertEqual(len([i for i, j in zip(test_expanded_key, test_data.test_expanded_key_validated[key_size]) if i == j]),
                 len(test_data.test_expanded_key_validated[key_size]),
                 msg='Key expansion %d bit'%key_size)
 

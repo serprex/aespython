@@ -38,6 +38,7 @@ ciph="""def decipher_block(f,s):
  R=ek[f+16:]
  return """.replace("S",ups).replace("R",upr).replace("X",xori)
 class AESCipher:
+    __slots__ = "_expanded_key", "_Nr"
     def __init__(self,expanded_key):
         self._expanded_key=expanded_key
         self._Nr=len(expanded_key)-16

@@ -11,17 +11,10 @@ Licensed under the MIT license http://www.opensource.org/licenses/mit-license.ph
 """
 __author__ = "Adam Newman"
 __all__ = "OFBMode",
+from .mode import Mode
 
-class OFBMode:
+class OFBMode(Mode):
     """Perform OFB operation on a block and retain IV information for next operation"""
-    def __init__(self, block_cipher, block_size):
-        self._block_cipher = block_cipher
-        self._block_size = block_size
-        self._iv = [0] * block_size
-
-    def set_iv(self, iv):
-        if len(iv) == self._block_size:
-            self._iv = iv
 
     def encrypt_block(self, plaintext):
         self._iv = cipher_iv = self._block_cipher.cipher_block(self._iv)

@@ -11,17 +11,10 @@ Licensed under the MIT license http://www.opensource.org/licenses/mit-license.ph
 """
 __author__ = "Adam Newman"
 __all__ = "CFBMode",
+from .mode import Mode
 
-class CFBMode:
+class CFBMode(Mode):
     """Perform CFB operation on a block and retain IV information for next operation"""
-    def __init__(self, block_cipher, block_size):
-        self._block_cipher = block_cipher
-        self._block_size = block_size
-        self._iv = [0] * block_size
-
-    def set_iv(self, iv):
-        if len(iv) == self._block_size:
-            self._iv = iv
 
     def encrypt_block(self, plaintext):
         cipher_iv = self._block_cipher.cipher_block(self._iv)
