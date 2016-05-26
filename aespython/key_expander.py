@@ -1,11 +1,7 @@
-#!/usr/bin/env python
-
 """
 AES Key Expansion.
 
 Expands 128, 192, or 256 bit key for use with AES
-
-Running this file as __main__ will result in a self-test of the algorithm.
 
 Algorithm per NIST FIPS-197 http://csrc.nist.gov/publications/fips/fips197/fips-197.pdf
 

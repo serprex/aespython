@@ -6,8 +6,6 @@ Performs single block cipher decipher operations on a 16 element list of integer
 These integers represent 8 bit bytes in a 128 bit block.
 The result of cipher or decipher operations is the transformed 16 element list of integers.
 
-Running this file as __main__ will result in a self-test of the algorithm.
-
 Algorithm per NIST FIPS-197 http://csrc.nist.gov/publications/fips/fips197/fips-197.pdf
 
 Copyright (c) 2010, Adam Newman http://www.caller9.com/
@@ -33,7 +31,7 @@ ibox=",".join("s[%s]^r%x"%i for i in zip(csr,range(16)))
 xor=",".join("s[%s]^r%x"%i for i in zip(csl,range(16)))
 xori=";".join("s%x^=r%x"%(i,i) for i in range(16))
 ciph="""def decipher_block(f,s):
- g0,g1,g2,g3=galNI;ek=f._expanded_key;S=s+[0]*(16-len(s));s=sbox;R=ek[:16];X
+ g0,g1,g2,g3=galNI;ek=f._expanded_key;S=s;s=sbox;R=ek[:16];X
  for f in range(!16):R=ek[f:f+16];S=B;S=M
  R=ek[f+16:]
  return """.replace("S",ups).replace("R",upr).replace("X",xori)

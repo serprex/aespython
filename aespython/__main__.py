@@ -14,7 +14,7 @@ class TestCipher(TestCase):
                 16, msg='Test %d bit cipher'%key_size)
             test_result_plaintext = test_cipher.decipher_block(test_data.test_block_ciphertext_validated[key_size])
         self.assertEqual(len([i for i, j in zip(test_result_plaintext, test_data.test_block_plaintext) if i == j]),
-            16,msg='Test %d bit decipher'%key_size)
+            16, msg='Test %d bit decipher'%key_size)
 
 class TestKeyExpander(TestCase):
     def test_keys(self):
@@ -98,26 +98,28 @@ class Benchmark(TestCase):
             test_mode = mode(AESCipher(test_expander.expand(test_data.test_mode_key[:])), 16)
             test_mode.set_iv(test_data.test_mode_iv[:])
             return test_mode
-        payload = [getrandbits(8) for a in range(16)]
-        payload0 = payload[:]
+        payload = [getrandbits(8) for a in range(24576)] # 16*3*512
+        payloaden = []
         test_data = TestKeys()
         test_expander = KeyExpander(256)
         test_cbc = mkmode(CBCMode)
         test_cfb = mkmode(CFBMode)
         test_ofb = mkmode(OFBMode)
         t0 = time()
-        for a in range(1024):
-            payload = test_cbc.encrypt_block(payload)
-            payload = test_cfb.encrypt_block(payload)
-            payload = test_ofb.encrypt_block(payload)
+        for a in range(0, 24576, 48):
+            payloaden += test_cbc.encrypt_block(payload[a:a+16])
+            payloaden += test_cfb.encrypt_block(payload[a+16:a+32])
+            payloaden += test_ofb.encrypt_block(payload[a+32:a+48])
         test_cbc.set_iv(test_data.test_mode_iv[:])
         test_cfb.set_iv(test_data.test_mode_iv[:])
         test_ofb.set_iv(test_data.test_mode_iv[:])
-        for a in range(1024):
-            payload = test_ofb.decrypt_block(payload)
-            payload = test_cfb.decrypt_block(payload)
-            payload = test_cbc.decrypt_block(payload)
+        payloadde = []
+        for a in range(0, 24576, 48):
+            payloadde += test_cbc.decrypt_block(payloaden[a:a+16])
+            payloadde += test_cfb.decrypt_block(payloaden[a+16:a+32])
+            payloadde += test_ofb.decrypt_block(payloaden[a+32:a+48])
         print(time() - t0)
+        assert payload == payloadde
 
 class TestKeys:
     """Test data, keys, IVs, and output to use in self-tests"""
@@ -170,9 +172,9 @@ class TestKeys:
         }
 
         self.test_block_ciphertext_validated = {
-            128: [0x69, 0xc4, 0xe0, 0xd8, 0x6a, 0x7b, 0x04, 0x30, 0xd8, 0xcd, 0xb7, 0x80, 0x70, 0xb4, 0xc5, 0x5a],
-            192: [0xdd, 0xa9, 0x7c, 0xa4, 0x86, 0x4c, 0xdf, 0xe0, 0x6e, 0xaf, 0x70, 0xa0, 0xec, 0x0d, 0x71, 0x91],
-            256: [0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf, 0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89],
+            128: bytearray(b"\x69\xc4\xe0\xd8\x6a\x7b\x04\x30\xd8\xcd\xb7\x80\x70\xb4\xc5\x5a"),
+            192: bytearray(b"\xdd\xa9\x7c\xa4\x86\x4c\xdf\xe0\x6e\xaf\x70\xa0\xec\x0d\x71\x91"),
+            256: bytearray(b"\x8e\xa2\xb7\xca\x51\x67\x45\xbf\xea\xfc\x49\x90\x4b\x49\x60\x89"),
         }
 
         self.test_block_plaintext = list(range(0, 0x100, 0x11))
@@ -183,26 +185,26 @@ class TestKeys:
             0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
             0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7, 0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4]
         self.test_mode_iv = list(range(0x10))
-        self.test_mode_plaintext = [
-            [0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a],
-            [0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51],
-            [0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef],
-            [0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10]]
-        self.test_cbc_ciphertext = [
-            [0xf5, 0x8c, 0x4c, 0x04, 0xd6, 0xe5, 0xf1, 0xba, 0x77, 0x9e, 0xab, 0xfb, 0x5f, 0x7b, 0xfb, 0xd6],
-            [0x9c, 0xfc, 0x4e, 0x96, 0x7e, 0xdb, 0x80, 0x8d, 0x67, 0x9f, 0x77, 0x7b, 0xc6, 0x70, 0x2c, 0x7d],
-            [0x39, 0xf2, 0x33, 0x69, 0xa9, 0xd9, 0xba, 0xcf, 0xa5, 0x30, 0xe2, 0x63, 0x04, 0x23, 0x14, 0x61],
-            [0xb2, 0xeb, 0x05, 0xe2, 0xc3, 0x9b, 0xe9, 0xfc, 0xda, 0x6c, 0x19, 0x07, 0x8c, 0x6a, 0x9d, 0x1b]]
-        self.test_cfb_ciphertext = [
-            [0xdc, 0x7e, 0x84, 0xbf, 0xda, 0x79, 0x16, 0x4b, 0x7e, 0xcd, 0x84, 0x86, 0x98, 0x5d, 0x38, 0x60],
-            [0x39, 0xff, 0xed, 0x14, 0x3b, 0x28, 0xb1, 0xc8, 0x32, 0x11, 0x3c, 0x63, 0x31, 0xe5, 0x40, 0x7b],
-            [0xdf, 0x10, 0x13, 0x24, 0x15, 0xe5, 0x4b, 0x92, 0xa1, 0x3e, 0xd0, 0xa8, 0x26, 0x7a, 0xe2, 0xf9],
-            [0x75, 0xa3, 0x85, 0x74, 0x1a, 0xb9, 0xce, 0xf8, 0x20, 0x31, 0x62, 0x3d, 0x55, 0xb1, 0xe4, 0x71]]
-        self.test_ofb_ciphertext = [
-            [0xdc, 0x7e, 0x84, 0xbf, 0xda, 0x79, 0x16, 0x4b, 0x7e, 0xcd, 0x84, 0x86, 0x98, 0x5d, 0x38, 0x60],
-            [0x4f, 0xeb, 0xdc, 0x67, 0x40, 0xd2, 0x0b, 0x3a, 0xc8, 0x8f, 0x6a, 0xd8, 0x2a, 0x4f, 0xb0, 0x8d],
-            [0x71, 0xab, 0x47, 0xa0, 0x86, 0xe8, 0x6e, 0xed, 0xf3, 0x9d, 0x1c, 0x5b, 0xba, 0x97, 0xc4, 0x08],
-            [0x01, 0x26, 0x14, 0x1d, 0x67, 0xf3, 0x7b, 0xe8, 0x53, 0x8f, 0x5a, 0x8b, 0xe7, 0x40, 0xe4, 0x84]]
+        self.test_mode_plaintext = (
+            bytearray(b"\x6b\xc1\xbe\xe2\x2e\x40\x9f\x96\xe9\x3d\x7e\x11\x73\x93\x17\x2a"),
+            bytearray(b"\xae\x2d\x8a\x57\x1e\x03\xac\x9c\x9e\xb7\x6f\xac\x45\xaf\x8e\x51"),
+            bytearray(b"\x30\xc8\x1c\x46\xa3\x5c\xe4\x11\xe5\xfb\xc1\x19\x1a\x0a\x52\xef"),
+            bytearray(b"\xf6\x9f\x24\x45\xdf\x4f\x9b\x17\xad\x2b\x41\x7b\xe6\x6c\x37\x10"))
+        self.test_cbc_ciphertext = (
+            bytearray(b"\xf5\x8c\x4c\x04\xd6\xe5\xf1\xba\x77\x9e\xab\xfb\x5f\x7b\xfb\xd6"),
+            bytearray(b"\x9c\xfc\x4e\x96\x7e\xdb\x80\x8d\x67\x9f\x77\x7b\xc6\x70\x2c\x7d"),
+            bytearray(b"\x39\xf2\x33\x69\xa9\xd9\xba\xcf\xa5\x30\xe2\x63\x04\x23\x14\x61"),
+            bytearray(b"\xb2\xeb\x05\xe2\xc3\x9b\xe9\xfc\xda\x6c\x19\x07\x8c\x6a\x9d\x1b"))
+        self.test_cfb_ciphertext = (
+            bytearray(b"\xdc\x7e\x84\xbf\xda\x79\x16\x4b\x7e\xcd\x84\x86\x98\x5d\x38\x60"),
+            bytearray(b"\x39\xff\xed\x14\x3b\x28\xb1\xc8\x32\x11\x3c\x63\x31\xe5\x40\x7b"),
+            bytearray(b"\xdf\x10\x13\x24\x15\xe5\x4b\x92\xa1\x3e\xd0\xa8\x26\x7a\xe2\xf9"),
+            bytearray(b"\x75\xa3\x85\x74\x1a\xb9\xce\xf8\x20\x31\x62\x3d\x55\xb1\xe4\x71"))
+        self.test_ofb_ciphertext = (
+            bytearray(b"\xdc\x7e\x84\xbf\xda\x79\x16\x4b\x7e\xcd\x84\x86\x98\x5d\x38\x60"),
+            bytearray(b"\x4f\xeb\xdc\x67\x40\xd2\x0b\x3a\xc8\x8f\x6a\xd8\x2a\x4f\xb0\x8d"),
+            bytearray(b"\x71\xab\x47\xa0\x86\xe8\x6e\xed\xf3\x9d\x1c\x5b\xba\x97\xc4\x08"),
+            bytearray(b"\x01\x26\x14\x1d\x67\xf3\x7b\xe8\x53\x8f\x5a\x8b\xe7\x40\xe4\x84"))
 
 if __name__ == "__main__":
     main()

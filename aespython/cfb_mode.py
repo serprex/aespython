@@ -2,8 +2,6 @@
 """
 CFB Mode of operation
 
-Running this file as __main__ will result in a self-test of the algorithm.
-
 Algorithm per NIST SP 800-38A http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf
 
 Copyright (c) 2010, Adam Newman http://www.caller9.com/
