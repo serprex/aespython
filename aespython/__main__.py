@@ -90,6 +90,35 @@ class TestEncryptionModeOFB(TestCase):
             self.assertEqual(len([i for i, j in zip(test_data.test_mode_plaintext[k],test_ofb.decrypt_block(test_data.test_ofb_ciphertext[k])) if i == j]),
                 16, msg='OFB decrypt test block%d'%k)
 
+class Benchmark(TestCase):
+    def test_mode(self):
+        from time import time
+        from random import getrandbits
+        def mkmode(mode):
+            test_mode = mode(AESCipher(test_expander.expand(test_data.test_mode_key[:])), 16)
+            test_mode.set_iv(test_data.test_mode_iv[:])
+            return test_mode
+        payload = [getrandbits(8) for a in range(16)]
+        payload0 = payload[:]
+        test_data = TestKeys()
+        test_expander = KeyExpander(256)
+        test_cbc = mkmode(CBCMode)
+        test_cfb = mkmode(CFBMode)
+        test_ofb = mkmode(OFBMode)
+        t0 = time()
+        for a in range(1024):
+            payload = test_cbc.encrypt_block(payload)
+            payload = test_cfb.encrypt_block(payload)
+            payload = test_ofb.encrypt_block(payload)
+        test_cbc.set_iv(test_data.test_mode_iv[:])
+        test_cfb.set_iv(test_data.test_mode_iv[:])
+        test_ofb.set_iv(test_data.test_mode_iv[:])
+        for a in range(1024):
+            payload = test_ofb.decrypt_block(payload)
+            payload = test_cfb.decrypt_block(payload)
+            payload = test_cbc.decrypt_block(payload)
+        print(time() - t0)
+
 class TestKeys:
     """Test data, keys, IVs, and output to use in self-tests"""
     def __init__(self):
@@ -146,16 +175,14 @@ class TestKeys:
             256: [0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf, 0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89],
         }
 
-        self.test_block_plaintext = [
-            0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff]
+        self.test_block_plaintext = list(range(0, 0x100, 0x11))
 
         #After initial validation, these deviated from test in SP 800-38A to use same key, iv, and plaintext on tests.
         #Still valid, just easier to test with.
         self.test_mode_key = [
             0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
             0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7, 0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4]
-        self.test_mode_iv = [
-            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f]
+        self.test_mode_iv = list(range(0x10))
         self.test_mode_plaintext = [
             [0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a],
             [0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51],

@@ -49,10 +49,7 @@ class AESdemo:
         self._key = key
 
     def hex_string_to_int_array(self, hex_string):
-        result = []
-        for i in range(0,len(hex_string),2):
-            result.append( int( hex_string[i:i+2], 16))
-        return result
+        return [int(hex_string[i:i+2], 16) for i in range(0, len(hex_string), 2)]
 
     def create_key_from_password(self, password):
         if self._salt is None:
@@ -94,7 +91,6 @@ class AESdemo:
                 while 1:
                     in_data = bytearray(in_file.read(16))
                     if not in_data:
-                        eof = True
                         self._salt = None
                         return True
                     else:
@@ -102,7 +98,7 @@ class AESdemo:
                         #At end of file, if end of original file is within < 16 bytes slice it out.
                         out_file.write(self.fix_bytes(
                             out_data[:filesize - out_file.tell()] if filesize - out_file.tell() < 16
-                            else out_file.write(self.fix_bytes(out_data))
+                            else out_file.write(self.fix_bytes(out_data))))
 
     def encrypt_file(self, in_file_path, out_file_path, password = None):
         #If a password is provided, generate new salt and create key and iv
