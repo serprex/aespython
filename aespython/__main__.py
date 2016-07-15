@@ -39,12 +39,12 @@ class TestEncryptionModeCBC(TestCase):
         test_cbc = CBCMode(test_cipher, 16)
 
         test_cbc.set_iv(test_data.test_mode_iv)
-        for k in range(4):
+        for k in 0,1,2,3:
             self.assertEqual(len([i for i, j in zip(test_data.test_cbc_ciphertext[k],test_cbc.encrypt_block(test_data.test_mode_plaintext[k])) if i == j]),
                 16, msg='CBC encrypt test block %d'%k)
 
         test_cbc.set_iv(test_data.test_mode_iv)
-        for k in range(4):
+        for k in 0,1,2,3:
             self.assertEqual(len([i for i, j in zip(test_data.test_mode_plaintext[k],test_cbc.decrypt_block(test_data.test_cbc_ciphertext[k])) if i == j]),
                 16, msg='CBC decrypt test block %d'%k)
 
@@ -60,12 +60,12 @@ class TestEncryptionModeCFB(TestCase):
         test_cfb = CFBMode(test_cipher, 16)
 
         test_cfb.set_iv(test_data.test_mode_iv)
-        for k in range(4):
+        for k in 0,1,2,3:
             self.assertEqual(len([i for i, j in zip(test_data.test_cfb_ciphertext[k],test_cfb.encrypt_block(test_data.test_mode_plaintext[k])) if i == j]),
                 16, msg='CFB encrypt test block%d'%k)
 
         test_cfb.set_iv(test_data.test_mode_iv)
-        for k in range(4):
+        for k in 0,1,2,3:
             self.assertEqual(len([i for i, j in zip(test_data.test_mode_plaintext[k],test_cfb.decrypt_block(test_data.test_cfb_ciphertext[k])) if i == j]),
                 16, msg='CFB decrypt test block%d'%k)
 
@@ -81,12 +81,12 @@ class TestEncryptionModeOFB(TestCase):
         test_ofb = OFBMode(test_cipher, 16)
 
         test_ofb.set_iv(test_data.test_mode_iv)
-        for k in range(4):
+        for k in 0,1,2,3:
             self.assertEqual(len([i for i, j in zip(test_data.test_ofb_ciphertext[k],test_ofb.encrypt_block(test_data.test_mode_plaintext[k])) if i == j]),
                 16, msg='OFB encrypt test block%d'%k)
 
         test_ofb.set_iv(test_data.test_mode_iv)
-        for k in range(4):
+        for k in 0,1,2,3:
             self.assertEqual(len([i for i, j in zip(test_data.test_mode_plaintext[k],test_ofb.decrypt_block(test_data.test_ofb_ciphertext[k])) if i == j]),
                 16, msg='OFB decrypt test block%d'%k)
 
