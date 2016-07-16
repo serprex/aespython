@@ -6,8 +6,7 @@ class TestCipher(TestCase):
         """Test AES cipher with all key lengths"""
         test_data = TestKeys()
         for key_size in 128, 192, 256:
-            test_key_expander = KeyExpander(key_size)
-            test_expanded_key = test_key_expander.expand(test_data.test_key[key_size])
+            test_expanded_key = expandKey(test_data.test_key[key_size])
             test_cipher = AESCipher(test_expanded_key)
             test_result_ciphertext = test_cipher.cipher_block(test_data.test_block_plaintext)
             self.assertEqual(len([i for i, j in zip(test_result_ciphertext, test_data.test_block_ciphertext_validated[key_size]) if i == j]),
@@ -21,8 +20,7 @@ class TestKeyExpander(TestCase):
         """Test All Key Expansions"""
         test_data = TestKeys()
         for key_size in 128, 192, 256:
-            test_expander = KeyExpander(key_size)
-            test_expanded_key = test_expander.expand(test_data.test_key[key_size])
+            test_expanded_key = expandKey(test_data.test_key[key_size])
             self.assertEqual(len([i for i, j in zip(test_expanded_key, test_data.test_expanded_key_validated[key_size]) if i == j]),
                 len(test_data.test_expanded_key_validated[key_size]),
                 msg='Key expansion %d bit'%key_size)
@@ -31,8 +29,7 @@ class TestEncryptionModeCBC(TestCase):
     def test_mode(self):
         test_data = TestKeys()
 
-        test_expander = KeyExpander(256)
-        test_expanded_key = test_expander.expand(test_data.test_mode_key)
+        test_expanded_key = expandKey(test_data.test_mode_key)
 
         test_cipher = AESCipher(test_expanded_key)
 
@@ -52,8 +49,7 @@ class TestEncryptionModeCFB(TestCase):
     def test_mode(self):
         test_data = TestKeys()
 
-        test_expander = KeyExpander(256)
-        test_expanded_key = test_expander.expand(test_data.test_mode_key)
+        test_expanded_key = expandKey(test_data.test_mode_key)
 
         test_cipher = AESCipher(test_expanded_key)
 
@@ -73,8 +69,7 @@ class TestEncryptionModeOFB(TestCase):
     def test_mode(self):
         test_data = TestKeys()
 
-        test_expander = KeyExpander(256)
-        test_expanded_key = test_expander.expand(test_data.test_mode_key)
+        test_expanded_key = expandKey(test_data.test_mode_key)
 
         test_cipher = AESCipher(test_expanded_key)
 
@@ -95,13 +90,12 @@ class Benchmark(TestCase):
         from time import time
         from random import getrandbits
         def mkmode(mode):
-            test_mode = mode(AESCipher(test_expander.expand(test_data.test_mode_key[:])), 16)
+            test_mode = mode(AESCipher(expandKey(test_data.test_mode_key[:])), 16)
             test_mode.set_iv(test_data.test_mode_iv[:])
             return test_mode
         payload = [getrandbits(8) for a in range(24576)] # 16*3*512
         payloaden = []
         test_data = TestKeys()
-        test_expander = KeyExpander(256)
         test_cbc = mkmode(CBCMode)
         test_cfb = mkmode(CFBMode)
         test_ofb = mkmode(OFBMode)

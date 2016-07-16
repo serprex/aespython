@@ -1,5 +1,5 @@
 """
-Instantiate AES tables for rcon,sbox,i_sbox,and galois_lookup.
+AES lookup tables
 
 Copyright (c) 2010,Adam Newman http://www.caller9.com/
 Licensed under the MIT license http://www.opensource.org/licenses/mit-license.php

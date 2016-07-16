@@ -7,7 +7,7 @@ Copyright (c) 2010, Adam Newman http://www.caller9.com/
 Licensed under the MIT license http://www.opensource.org/licenses/mit-license.php
 """
 __all__ = "OFBMode",
-from .mode import Mode
+from . import Mode
 
 class OFBMode(Mode):
     """Perform OFB operation on a block and retain IV information for next operation"""
