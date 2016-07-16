@@ -29,18 +29,16 @@ ibox=",".join("s[%s]^r%x"%i for i in zip(csr,range(16)))
 xor=",".join("s[%s]^r%x"%i for i in zip(csl,range(16)))
 xori=";".join("s%x^=r%x"%(i,i) for i in range(16))
 ciph="""def decipher_block(z,s):
- g0,g1,g2,g3=galNI;ek=z._expanded_key;S=s;s=sbox;R=z._f16;X
- for f in z._Nr:R=ek[f];S=B;S=M
+ g0,g1,g2,g3=galNI;S=s;s=sbox;R=z._f16;X
+ for f in z._Nr:R=f;S=B;S=M
  R=z._l16
  return """.replace("S",ups).replace("R",upr).replace("X",xori)
 class AESCipher:
-    __slots__ = "_expanded_key", "_Nr", "_Nrr", "_f16","_l16"
+    __slots__ = "_Nr", "_Nrr", "_f16","_l16"
     def __init__(self,expanded_key):
-        nr=len(expanded_key)
-        self._expanded_key=[expanded_key[i:i+16] for i in range(0,nr,16)]
-        self._Nr=range(1,nr-16>>4,1)
-        self._Nrr=range(nr-32>>4,0,-1)
-        self._f16=self._expanded_key[0]
-        self._l16=self._expanded_key[-1]
+        self._Nr=[expanded_key[i:i+16] for i in range(16,len(expanded_key)-16,16)]
+        self._Nrr=self._Nr[::-1]
+        self._f16=expanded_key[:16]
+        self._l16=expanded_key[-16:]
     exec(ciph.replace("g2,g3","").replace("dec","c").replace("B",box).replace("M",mix)+xor)
     exec(ciph.replace("NI","I").replace("l16\n","f16\n").replace("f16;","l16;").replace("Nr","Nrr").replace("sbox","i_sbox").replace("B",ibox).replace("M",imix)+ibox)
