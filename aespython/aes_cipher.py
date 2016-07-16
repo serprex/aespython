@@ -11,10 +11,8 @@ Algorithm per NIST FIPS-197 http://csrc.nist.gov/publications/fips/fips197/fips-
 Copyright (c) 2010, Adam Newman http://www.caller9.com/
 Licensed under the MIT license http://www.opensource.org/licenses/mit-license.php
 """
-__author__ = "Adam Newman"
 __all__ = "AESCipher",
 
-#Normally use relative import. In test mode use local import.
 from .aes_tables import sbox,i_sbox,galI,galNI
 ups=",".join("s%x"%x for x in range(16))
 upr=ups.replace("s","r")

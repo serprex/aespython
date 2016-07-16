@@ -4,7 +4,6 @@ Instantiate AES tables for rcon,sbox,i_sbox,and galois_lookup.
 Copyright (c) 2010,Adam Newman http://www.caller9.com/
 Licensed under the MIT license http://www.opensource.org/licenses/mit-license.php
 """
-__author__ = "Adam Newman"
 __all__ = "rcon", "sbox", "i_sbox", "galNI", "galI"
 rcon=(
 0x8d,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1b,0x36,0x6c,0xd8,0xab,0x4d,0x9a,
