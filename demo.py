@@ -31,7 +31,16 @@ import getopt
 import sys
 import time
 
-from aespython import KeyExpander, AESCipher, CBCMode
+from aespython import expandKey, AESCipher, CBCMode
+
+if bytes is str:
+    def fix_bytes(self, byte_list):
+        #bytes function is broken in python < 3. It appears to be an alias to str()
+        #Either that or I have insufficient magic to make it work properly. Calling bytes on my
+        #array returns a string of the list as if you fed the list to print() and captured stdout
+        return ''.join("%c"%i for i in byte_list)
+else:
+    fix_bytes = bytes
 
 class AESdemo:
     def __init__(self):
@@ -58,12 +67,6 @@ class AESdemo:
         self._key = bytearray(sha512[:32])
         self._iv = [i ^ j for i, j in zip(bytearray(self._salt[16:]), bytearray(sha512[32:48]))]
 
-    def fix_bytes(self, byte_list):
-        #bytes function is broken in python < 3. It appears to be an alias to str()
-        #Either that or I have insufficient magic to make it work properly. Calling bytes on my
-        #array returns a string of the list as if you fed the list to print() and captured stdout
-        return ''.join("%c"%i for i in byte_list) if bytes is str else bytes(byte_list)
-
     def decrypt_file(self, in_file_path, out_file_path, password = None):
         with open(in_file_path, 'rb') as in_file:
 
@@ -77,28 +80,27 @@ class AESdemo:
                 return False
 
             #Initialize encryption using key and iv
-            key_expander_256 = KeyExpander(256)
-            expanded_key = key_expander_256.expand(self._key)
+            expanded_key = expandKey(self._key)
             aes_cipher_256 = AESCipher(expanded_key)
-            aes_cbc_256 = CBCMode(aes_cipher_256, 16)
+            aes_cbc_256 = CBCMode(aes_cipher_256)
             aes_cbc_256.set_iv(self._iv)
 
             #Read original file size
-            filesize = struct.unpack('L',in_file.read(4))[0]
+            filesize = struct.unpack('!L',in_file.read(4))[0]
 
             #Decrypt to eof
             with open(out_file_path, 'wb') as out_file:
                 while 1:
-                    in_data = bytearray(in_file.read(16))
+                    in_data = in_file.read(16)
                     if not in_data:
                         self._salt = None
                         return True
                     else:
                         out_data = aes_cbc_256.decrypt_block(bytearray(in_data))
                         #At end of file, if end of original file is within < 16 bytes slice it out.
-                        out_file.write(self.fix_bytes(
+                        out_file.write(fix_bytes(
                             out_data[:filesize - out_file.tell()] if filesize - out_file.tell() < 16
-                            else out_file.write(self.fix_bytes(out_data))))
+                            else fix_bytes(out_data)))
 
     def encrypt_file(self, in_file_path, out_file_path, password = None):
         #If a password is provided, generate new salt and create key and iv
@@ -113,10 +115,9 @@ class AESdemo:
             return False
 
         #Initialize encryption using key and iv
-        key_expander_256 = KeyExpander(256)
-        expanded_key = key_expander_256.expand(self._key)
+        expanded_key = expandKey(self._key)
         aes_cipher_256 = AESCipher(expanded_key)
-        aes_cbc_256 = CBCMode(aes_cipher_256, 16)
+        aes_cbc_256 = CBCMode(aes_cipher_256)
         aes_cbc_256.set_iv(self._iv)
 
         #Get filesize of original file for storage in encrypted file
@@ -132,17 +133,18 @@ class AESdemo:
                     out_file.write(self._salt)
 
                 #Write filesize of original
-                out_file.write(struct.pack('L',filesize))
+                out_file.write(struct.pack('!L',filesize))
 
                 #Encrypt to eof
                 while 1:
-                    in_data = in_file.read(16)
+                    in_data = bytearray(in_file.read(16))
                     if not in_data:
                         self._salt = None
                         return True
                     else:
-                        out_data = aes_cbc_256.encrypt_block(bytearray(in_data))
-                        out_file.write(self.fix_bytes(out_data))
+                        while len(in_data) < 16:in_data.append(0)
+                        out_data = aes_cbc_256.encrypt_block(in_data)
+                        out_file.write(fix_bytes(out_data))
 
 def usage():
     print('AES Demo.py usage:')

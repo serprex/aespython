@@ -33,7 +33,7 @@ class TestEncryptionModeCBC(TestCase):
 
         test_cipher = AESCipher(test_expanded_key)
 
-        test_cbc = CBCMode(test_cipher, 16)
+        test_cbc = CBCMode(test_cipher)
 
         test_cbc.set_iv(test_data.test_mode_iv)
         for k in 0,1,2,3:
@@ -53,7 +53,7 @@ class TestEncryptionModeCFB(TestCase):
 
         test_cipher = AESCipher(test_expanded_key)
 
-        test_cfb = CFBMode(test_cipher, 16)
+        test_cfb = CFBMode(test_cipher)
 
         test_cfb.set_iv(test_data.test_mode_iv)
         for k in 0,1,2,3:
@@ -73,7 +73,7 @@ class TestEncryptionModeOFB(TestCase):
 
         test_cipher = AESCipher(test_expanded_key)
 
-        test_ofb = OFBMode(test_cipher, 16)
+        test_ofb = OFBMode(test_cipher)
 
         test_ofb.set_iv(test_data.test_mode_iv)
         for k in 0,1,2,3:
@@ -90,8 +90,8 @@ class Benchmark(TestCase):
         from time import time
         from random import getrandbits
         def mkmode(mode):
-            test_mode = mode(AESCipher(expandKey(test_data.test_mode_key[:])), 16)
-            test_mode.set_iv(test_data.test_mode_iv[:])
+            test_mode = mode(AESCipher(expandKey(test_data.test_mode_key[:])))
+            test_mode.set_iv(test_data.test_mode_iv)
             return test_mode
         payload = [getrandbits(8) for a in range(24576)] # 16*3*512
         payloaden = []
@@ -104,9 +104,9 @@ class Benchmark(TestCase):
             payloaden += test_cbc.encrypt_block(payload[a:a+16])
             payloaden += test_cfb.encrypt_block(payload[a+16:a+32])
             payloaden += test_ofb.encrypt_block(payload[a+32:a+48])
-        test_cbc.set_iv(test_data.test_mode_iv[:])
-        test_cfb.set_iv(test_data.test_mode_iv[:])
-        test_ofb.set_iv(test_data.test_mode_iv[:])
+        test_cbc.set_iv(test_data.test_mode_iv)
+        test_cfb.set_iv(test_data.test_mode_iv)
+        test_ofb.set_iv(test_data.test_mode_iv)
         payloadde = []
         for a in range(0, 24576, 48):
             payloadde += test_cbc.decrypt_block(payloaden[a:a+16])
