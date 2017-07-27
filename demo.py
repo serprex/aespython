@@ -34,11 +34,11 @@ import time
 from aespython import expandKey, AESCipher, CBCMode
 
 if bytes is str:
-    def fix_bytes(self, byte_list):
+    def fix_bytes(byte_list):
         #bytes function is broken in python < 3. It appears to be an alias to str()
         #Either that or I have insufficient magic to make it work properly. Calling bytes on my
         #array returns a string of the list as if you fed the list to print() and captured stdout
-        return ''.join("%c"%i for i in byte_list)
+        return ''.join(map(chr, byte_list))
 else:
     fix_bytes = bytes
 
