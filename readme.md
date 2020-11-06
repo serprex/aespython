@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/serprex/aespython.svg?branch=master)](https://travis-ci.org/serprex/aespython)
+[![Test](https://github.com/serprex/aespython/workflows/.github/workflows/test.yml/badge.svg)](https://github.com/serprex/aespython/actions?query=workflow%3A.github%2Fworkflows%2Ftest.yml)
 
 This repo is the pure speed fork of caller9's original library. This version does not handle padding. It implements CBC, CFB, & OFB
 
